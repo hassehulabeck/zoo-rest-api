@@ -54,6 +54,13 @@ router.route('/animals/:animalID')
     .patch((req, res) => {
         updatePost(req, res)
     })
+    .delete((req, res) => {
+        let sql = "DELETE FROM animals WHERE id =" + connection.escape(req.params.animalID)
+        connection.query(sql, (err, result, fields) => {
+            if (err) throw err
+            res.json(result)
+        })
+    })
 
 
 function updatePost(req, res) {
