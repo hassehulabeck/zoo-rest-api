@@ -8,14 +8,27 @@ let connection = mysql.createConnection({
     host: 'localhost',
     user: 'zooAdmin',
     password: 'br0MMABL0cks',
-    database: 'zoo'
+    database: 'zoo',
+    multipleStatements: true
 })
+
+const setupQuery = "CREATE DATABASE IF NOT EXISTS zoo COLLATE = utf8mb4_swedish_ci; CREATE TABLE IF NOT EXISTS animals (id int(11) NOT NULL AUTO_INCREMENT PRIMARY KEY, animalName varchar(20) DEFAULT NULL, age smallint(6) DEFAULT NULL, color varchar(14) DEFAULT NULL);INSERT INTO `animals` (`id`, `animalName`, `age`, `color`) VALUES(1, 'Gorilla', 4, 'Brun'), (3, 'Bisam', 4, 'Silvergrå'), (4, 'Råtta', 7, 'Grå'),(5, 'Grå Jako', 27, 'Blueish'),(6, 'Abborre', 3, 'Grön') ON DUPLICATE KEY UPDATE id = (id + 0)";
+
 
 // Starta kontakt med servern.
 connection.connect()
 
 router.get('/', (req, res) => {
     res.send("Zoo API")
+})
+
+router.get('/setup', (req, res) => {
+    connection.query(setupQuery, (err, result) => {
+        if (err) throw err
+
+        if (result.length == 3)
+            res.send("Databas och tabell är skapade/uppdaterade.")
+    })
 })
 
 router.route('/animals')
