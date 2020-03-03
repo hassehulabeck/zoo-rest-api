@@ -11,21 +11,21 @@ let connection = mysql.createConnection({
     database: 'zoo'
 })
 
+// Starta kontakt med servern.
+connection.connect()
+
 router.get('/', (req, res) => {
     res.send("Zoo API")
 })
 
 router.route('/animals')
     .get((req, res) => {
-        connection.connect()
         connection.query('SELECT * FROM animals', (err, result, fields) => {
             if (err) throw error
             res.json(result)
         })
-        connection.end()
     })
     .post((req, res) => {
-        connection.connect()
         let columns = []
         let values = []
         for (let column in req.body) {
@@ -38,17 +38,33 @@ router.route('/animals')
             if (err) throw err
             res.json(result)
         })
-        connection.end()
     })
 
-router.get('/animals/:animalID', (req, res) => {
-    connection.connect()
-    let sql = "SELECT * FROM animals WHERE id =" + connection.escape(req.params.animalID)
-    connection.query(sql, (err, result, fields) => {
+router.route('/animals/:animalID')
+    .get((req, res) => {
+        let sql = "SELECT * FROM animals WHERE id =" + connection.escape(req.params.animalID)
+        connection.query(sql, (err, result, fields) => {
+            if (err) throw err
+            res.json(result)
+        })
+    })
+    .put((req, res) => {
+        updatePost(req, res)
+    })
+    .patch((req, res) => {
+        updatePost(req, res)
+    })
+
+
+function updatePost(req, res) {
+
+    // Frågetecknet i queryn gör att indata (req.body) escape:as, dvs tvättas från ev farlig kod.
+
+    let sql = 'UPDATE animals SET ? WHERE id =' + connection.escape(req.params.animalID)
+    connection.query(sql, req.body, (err, result, fields) => {
         if (err) throw err
         res.json(result)
     })
-    connection.end()
-})
+}
 
 module.exports = router
