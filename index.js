@@ -2,6 +2,10 @@ const express = require('express')
 const app = express()
 const router = require('./routes.js')
 
+// Kunna hantera postningar från Postman
+app.use(express.urlencoded({
+    extended: true
+}))
 
 app.use('/', router)
 
