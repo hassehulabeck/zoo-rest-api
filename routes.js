@@ -18,7 +18,7 @@ const setupQuery = "CREATE DATABASE IF NOT EXISTS zoo COLLATE = utf8mb4_swedish_
 // Starta kontakt med servern.
 connection.connect()
 
-router.get('/', (req, res) => {
+router.get('/?[A-Z]{0,3}/', (req, res) => {
     res.send("Zoo API")
 })
 
@@ -31,7 +31,34 @@ router.get('/setup', (req, res) => {
     })
 })
 
-router.route('/animals')
+router.route('/?[A-Z]{0,3}/animals/:animalID')
+    .get((req, res) => {
+        let sql = "SELECT * FROM animals WHERE id =" + connection.escape(req.params.animalID)
+
+        connection.query(sql, (err, result, fields) => {
+            if (err) throw err
+            res.json(result)
+        })
+    })
+    .put((req, res) => {
+        if (req.body.hasAccess)
+            updatePost(req, res)
+    })
+    .patch((req, res) => {
+        if (req.body.hasAccess)
+            updatePost(req, res)
+    })
+    .delete((req, res) => {
+        if (req.body.hasAccess) {
+            let sql = "DELETE FROM animals WHERE id =" + connection.escape(req.params.animalID)
+            connection.query(sql, (err, result, fields) => {
+                if (err) throw err
+                res.json(result)
+            })
+        }
+    })
+
+router.route('/?[A-Z]{0,3}/animals')
     .get((req, res) => {
         connection.query('SELECT * FROM animals', (err, result, fields) => {
             if (err) throw error
@@ -39,42 +66,25 @@ router.route('/animals')
         })
     })
     .post((req, res) => {
-        let columns = []
-        let values = []
-        for (let column in req.body) {
-            columns.push(column)
-            values.push(req.body[column])
+        if (req.body.hasAccess) {
+            let columns = []
+            let values = []
+            for (let column in req.body) {
+                if (column != 'hasAccess') {
+                    columns.push(column)
+                    values.push(req.body[column])
+                }
+            }
+            let sql = 'INSERT INTO animals (??) VALUES (?)'
+            sql = mysql.format(sql, [columns, values])
+            connection.query(sql, (err, result, fields) => {
+                if (err) throw err
+                res.json(result)
+            })
+        } else {
+            res.status(401).send("Nope")
         }
-        let sql = 'INSERT INTO animals (??) VALUES (?)'
-        sql = mysql.format(sql, [columns, values])
-        connection.query(sql, (err, result, fields) => {
-            if (err) throw err
-            res.json(result)
-        })
     })
-
-router.route('/animals/:animalID')
-    .get((req, res) => {
-        let sql = "SELECT * FROM animals WHERE id =" + connection.escape(req.params.animalID)
-        connection.query(sql, (err, result, fields) => {
-            if (err) throw err
-            res.json(result)
-        })
-    })
-    .put((req, res) => {
-        updatePost(req, res)
-    })
-    .patch((req, res) => {
-        updatePost(req, res)
-    })
-    .delete((req, res) => {
-        let sql = "DELETE FROM animals WHERE id =" + connection.escape(req.params.animalID)
-        connection.query(sql, (err, result, fields) => {
-            if (err) throw err
-            res.json(result)
-        })
-    })
-
 
 function updatePost(req, res) {
 
