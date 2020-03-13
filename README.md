@@ -12,4 +12,4 @@ God tur.
 2. Den ska ha kolumnerna id INT AUTO_INCREMENT PRIMARY KEY samt apikey VARCHAR(30)
 3. Man kan också lägga till ytterligare en kolumn för vilken roll innehavaren av api-nyckeln har (0=read, 1=read & post, 2=read, post, put, patch, delete) 
 Den kolumnen kan då heta role SMALLINT och ha ett av dessa värden. Bra att lägga till en kommentar i databasen om detta, så att man vet vad siffrorna betyder.
-
+4. Därefter kan man hämta ut info om role, samt lägga in det värdet i req.body, och i varje route sedan kolla om URIens api-key har rätt behörighet för aktionen. På så sätt har vi både autentisering (vem är det som frågar?) och auktorisering (får den göra detta?)
