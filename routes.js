@@ -18,8 +18,16 @@ const setupQuery = "CREATE DATABASE IF NOT EXISTS zoo COLLATE = utf8mb4_swedish_
 // Starta kontakt med servern.
 connection.connect()
 
-router.get('/?[A-Z]{0,3}/', (req, res) => {
-    res.send("Zoo API")
+/* REGEX-matchningar: 
+/? = 0 eller fler /
+[a-zA-Z0-9]{0,3} = Gemener, versaler och siffror i kombination, mellan 0 och 3 tecken.
+/ = /
+*/
+router.get('/?[a-zA-Z0-9]{0,20}/', (req, res) => {
+    if (req.body.hasAccess)
+        res.send("Zoo API")
+    else
+        res.status(401).send("Nej")
 })
 
 router.get('/setup', (req, res) => {
@@ -31,10 +39,9 @@ router.get('/setup', (req, res) => {
     })
 })
 
-router.route('/?[A-Z]{0,3}/animals/:animalID')
+router.route('/?[a-zA-Z0-9]{0,20}/animals/:animalID')
     .get((req, res) => {
         let sql = "SELECT * FROM animals WHERE id =" + connection.escape(req.params.animalID)
-
         connection.query(sql, (err, result, fields) => {
             if (err) throw err
             res.json(result)
@@ -47,6 +54,8 @@ router.route('/?[A-Z]{0,3}/animals/:animalID')
     .patch((req, res) => {
         if (req.body.hasAccess)
             updatePost(req, res)
+        else
+            res.status(401).send("Tyvärr")
     })
     .delete((req, res) => {
         if (req.body.hasAccess) {
@@ -58,7 +67,7 @@ router.route('/?[A-Z]{0,3}/animals/:animalID')
         }
     })
 
-router.route('/?[A-Z]{0,3}/animals')
+router.route('/?[a-zA-Z0-9]{0,20}/animals')
     .get((req, res) => {
         connection.query('SELECT * FROM animals', (err, result, fields) => {
             if (err) throw error
@@ -89,9 +98,11 @@ router.route('/?[A-Z]{0,3}/animals')
 function updatePost(req, res) {
 
     // Frågetecknet i queryn gör att indata (req.body) escape:as, dvs tvättas från ev farlig kod.
-
+    // Flytta req.body till data och ta bort hasAccess.
+    let data = req.body
+    delete data.hasAccess
     let sql = 'UPDATE animals SET ? WHERE id =' + connection.escape(req.params.animalID)
-    connection.query(sql, req.body, (err, result, fields) => {
+    connection.query(sql, data, (err, result, fields) => {
         if (err) throw err
         res.json(result)
     })
