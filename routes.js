@@ -16,18 +16,15 @@ const setupQuery = "CREATE DATABASE IF NOT EXISTS zoo COLLATE = utf8mb4_swedish_
 
 
 // Starta kontakt med servern.
-connection.connect()
+//connection.connect()
 
 /* REGEX-matchningar: 
 /? = 0 eller fler /
-[a-zA-Z0-9]{0,3} = Gemener, versaler och siffror i kombination, mellan 0 och 3 tecken.
+[a-zA-Z0-9]{0,20} = Gemener, versaler och siffror i kombination, mellan 0 och 20 tecken.
 / = /
 */
 router.get('/?[a-zA-Z0-9]{0,20}/', (req, res) => {
-    if (req.body.hasAccess)
-        res.send("Zoo API")
-    else
-        res.status(401).send("Nej")
+    res.send("Zoo API")
 })
 
 router.get('/setup', (req, res) => {
@@ -48,23 +45,28 @@ router.route('/?[a-zA-Z0-9]{0,20}/animals/:animalID')
         })
     })
     .put((req, res) => {
-        if (req.body.hasAccess)
-            updatePost(req, res)
-    })
-    .patch((req, res) => {
-        if (req.body.hasAccess)
+        if (req.body.hasAccess && req.body.accessRole == 2)
             updatePost(req, res)
         else
-            res.status(401).send("Tyvärr")
+            res.status(401).send("Not sufficient rights")
+    })
+    .patch((req, res) => {
+        console.log(req.body)
+        console.log("...")
+        if (req.body.hasAccess && req.body.accessRole == 2)
+            updatePost(req, res)
+        else
+            res.status(401).send("Not sufficient rights for patching")
     })
     .delete((req, res) => {
-        if (req.body.hasAccess) {
+        if (req.body.hasAccess && req.body.accessRole == 2) {
             let sql = "DELETE FROM animals WHERE id =" + connection.escape(req.params.animalID)
             connection.query(sql, (err, result, fields) => {
                 if (err) throw err
                 res.json(result)
             })
-        }
+        } else
+            res.status(401).send("Not sufficient rights for patching")
     })
 
 router.route('/?[a-zA-Z0-9]{0,20}/animals')
@@ -75,11 +77,11 @@ router.route('/?[a-zA-Z0-9]{0,20}/animals')
         })
     })
     .post((req, res) => {
-        if (req.body.hasAccess) {
+        if (req.body.hasAccess && req.body.accessRole > 0) {
             let columns = []
             let values = []
             for (let column in req.body) {
-                if (column != 'hasAccess') {
+                if (column != 'hasAccess' && column != 'accessRole') {
                     columns.push(column)
                     values.push(req.body[column])
                 }
@@ -91,16 +93,18 @@ router.route('/?[a-zA-Z0-9]{0,20}/animals')
                 res.json(result)
             })
         } else {
-            res.status(401).send("Nope")
+            res.status(401).send("Not sufficient rights for posting")
         }
     })
 
 function updatePost(req, res) {
 
     // Frågetecknet i queryn gör att indata (req.body) escape:as, dvs tvättas från ev farlig kod.
-    // Flytta req.body till data och ta bort hasAccess.
+    // Flytta req.body till data och ta bort hasAccess samt accessRole
     let data = req.body
     delete data.hasAccess
+    delete data.accessRole
+
     let sql = 'UPDATE animals SET ? WHERE id =' + connection.escape(req.params.animalID)
     connection.query(sql, data, (err, result, fields) => {
         if (err) throw err
